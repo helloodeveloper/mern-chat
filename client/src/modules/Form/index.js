@@ -14,6 +14,25 @@ const Form = ({
         password : ''
     })
     const navigate = useNavigate();
+    const handleSubmit =async (e) => {
+        e.preventDefault();
+        console.log(data);
+        const res = await fetch(`http://localhost:8000/api/${isSignInPage ? 'login' : 'register'}` , {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json'},
+            body : JSON.stringify(data)
+        })
+        if(res.status === 400){
+            alert('Invalid Credentials !');
+        }else {
+            const resData = await res.json();
+            if(resData.token){
+                localStorage.setItem('user:token', resData.token);
+                localStorage.setItem('user:detail', JSON.stringify(resData.user));
+                navigate('/');
+            }
+        }
+    };
     //console.log(data);
   return (
     <div className="h-screen bg-light flex items-center justify-center shadow-xl">
@@ -37,7 +56,7 @@ const Form = ({
         <div 
             className="mt-5"
         >
-        <form onSubmit={()=> console.log("Submitted")}>
+        <form onSubmit={(e)=> handleSubmit(e)}>
         {!isSignInPage && <Input 
             label="Full Name" 
             name="Name" 

@@ -1,16 +1,19 @@
 const express = require('express');
 const bcryptjs = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const cors = require('cors');
 
 
 const app = express();
 const port = process.env.Port || 8000;
 app.use(express.json());
 app.use(express.urlencoded({ extended: false}));
+app.use(cors());
 
 
 //connect DB
 require('./db/connection');
+require('dotenv').config();
 
 //import files
 
@@ -54,6 +57,8 @@ app.post("/api/register", async (req, res, next) => {
   });
 
 
+  
+
   app.post('/api/login', async (req, res, next) => {
     try {
         const { email , password } = req.body;
@@ -79,10 +84,8 @@ app.post("/api/register", async (req, res, next) => {
                             $set: {token}
                         })
                         user.save();
-                        next();
+                        return res.status(200).json({user:{id: user._id,email:user.email , fullName: user.fullName}, token: user.token});
                     })
-
-                    res.status(200).json({user:{email:user.email , fullName: user.fullName}, token: user.token});
                  }
             }
         }
@@ -104,7 +107,7 @@ app.post('/api/conversation' , async (req, res) => {
     }
 });  
 
-app.get('/api/conversation/:userId' , async (req, res) => {
+app.get('/api/conversations/:userId' , async (req, res) => {
     try {
         const userId = req.params.userId;
         const conversations = await Conversations.find({ members : { $in : [userId] }});
@@ -143,11 +146,11 @@ app.post('/api/message' ,async (req, res) => {
 app.get('/api/message/:conversationId' ,async (req, res) => {
     try {
         const conversationId = req.params.conversationId;
-        if(!conversationId) return res.status(200).json([]);
+        if(conversationId == 'New') return res.status(200).json([]);
         const messages = await Messages.find({ conversationId });
         const messageUserData = Promise.all(messages.map(async (message) => {
             const user= await Users.findById(message.senderId);
-            return { user: {email : user.email , fullName: user.fullName}, message: message.message};
+            return {  user: {id: user._id ,email : user.email , fullName: user.fullName}, message: message.message};
      }));
         res.status(200).json(await messageUserData);
     } catch (error) {
