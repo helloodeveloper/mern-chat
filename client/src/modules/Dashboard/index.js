@@ -7,6 +7,7 @@ const Dashboard = () => {
         const [user, setUser] = useState(JSON.parse(localStorage.getItem('user:detail')));
         const [ conversations, setConversations] = useState([]);
         const [ messages, setMessages] = useState({});
+        const [ message, setMessage] = useState('');
         
 
          useEffect (  () =>{
@@ -33,8 +34,10 @@ const Dashboard = () => {
             });
             const resData = await res.json();
            // console.log("resdata > " , resData);
-            setMessages({messages: resData, receiver: user});
+            setMessages({messages: resData, receiver: user , conversationId});
         }; 
+
+        const sendMessage = async () => {};
 
  return (
     <div className='w-screen h-full flex'>
@@ -118,9 +121,11 @@ const Dashboard = () => {
                     }
                     </div>
             </div>
-            <div className=' p-8 w-full flex flex-row justify-center items-center'>
-               <Input placeholder='Type a message...' className='w-[75%] ml-0' inputClassName='p-2 px-2 border-0 shadow-xl rounded-full bg-secondary outline-none focus:ring-0 focus:border-0'/>
-               <div className='ml-4 p-2 rounded-lg bg-white mt-5  cursor-pointer' onClick={() => sendMessage()}>
+            {   messages?.receiver?.fullName &&
+                <div className=' p-8 w-full flex flex-row justify-center items-center'>
+               <Input placeholder='Type a message...' value={message} onChange={(e) => setMessage(e.target.value)} className='w-[75%] ml-0' inputClassName='p-2 px-2 border-0 shadow-xl rounded-full bg-secondary outline-none focus:ring-0 focus:border-0'/>
+               
+               <div className={`ml-4 p-2 rounded-lg bg-white mt-5  cursor-pointer ${!message ? 'pointer-events-none' : ''}`} onClick={() => sendMessage()}>
                <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-send" width="24" height="24" 
                     viewBox="0 0 24 24" strokeWidth="1.2" stroke="black" fill="none" strokeLinecap="round" strokeLinejoin="round">
                     <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
@@ -128,7 +133,7 @@ const Dashboard = () => {
                     <path d="M21 3l-6.5 18a.55 .55 0 0 1 -1 0l-3.5 -7l-7 -3.5a.55 .55 0 0 1 0 -1l18 -6.5"></path>
                 </svg>
                </div>
-               <div className=' rounded-lg bg-white mt-5  cursor-pointer'>
+               <div className=' rounded-lg bg-white mt-5 ml-2 cursor-pointer'>
                 <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-circle-plus" width="24" height="24"         viewBox="0 0 24 24" strokeWidth="1.2" stroke="black" fill="none" strokeLinecap="round" strokeLinejoin="round">
                     <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
                     <path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0"></path>
@@ -137,6 +142,7 @@ const Dashboard = () => {
                 </svg>
                </div>
             </div>
+            }
         </div>
         <div className='w-[25%] h-screen bg-light '></div>
     </div>
