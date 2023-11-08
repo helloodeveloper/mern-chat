@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Avatar from '../../assests/Avatar.svg'
 import Input from '../../components/Input'
+import { io } from 'socket.io-client';
 
 const Dashboard = () => {
         // eslint-disable-next-line
@@ -8,6 +9,33 @@ const Dashboard = () => {
         const [ conversations, setConversations] = useState([]);
         const [ messages, setMessages] = useState({});
         const [ message, setMessage] = useState('');
+        const [users , setUsers] = useState([]);
+        const [ socket, setSocket ] = useState(null);
+        const messageRef = useRef(null);
+     //   console.log("users > " , users);
+     //    console.log("messages > " , messages);
+        useEffect(() => {
+            setSocket(io('http://localhost:8080'))
+        }, [])  
+
+        useEffect(() => {
+            socket?.emit('addUser', user?.id);
+            socket?.on('getUsers', users => {
+                console.log("Active users > " , users);
+            });
+            socket?.on('getMessage', data => {
+                //console.log("data > " , data);
+                setMessages(prev => ({
+                    ...prev,
+                    messages: [...prev.messages, {user: data.user , message: data.message}]  
+                }))
+            });
+        //eslint-disable-next-line
+        }, [socket]);
+
+         useEffect(()=>{
+            messageRef?.current?.scrollIntoView({ behavior: 'smooth' });
+         }, [messages?.messages]) 
         
 
          useEffect (  () =>{
@@ -24,9 +52,28 @@ const Dashboard = () => {
            }
             fetchConversations();
          }, []);
+
+         useEffect(()=>{
+            const fetchUsers = async () => {
+                const res = await fetch(`http://localhost:8000/api/users/${user?.id}` , {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+
+                });
+                const resData = await res.json();
+                setUsers(resData);
+            }
+            fetchUsers();
+         //eslint-disable-next-line
+        }, []);
+
+
+         //eslint-disable-next-line
          
-        const fetchMessages = async (conversationId, user) => {
-            const res = await fetch(`http://localhost:8000/api/message/${conversationId}` , {
+        const fetchMessages = async (conversationId, receiver) => {
+            const res = await fetch(`http://localhost:8000/api/message/${conversationId}?senderId=${user?.id}&&receiverId=${receiver?.receiverId}` , {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -34,10 +81,32 @@ const Dashboard = () => {
             });
             const resData = await res.json();
            // console.log("resdata > " , resData);
-            setMessages({messages: resData, receiver: user , conversationId});
+            setMessages({messages: resData, receiver , conversationId});
         }; 
 
-        const sendMessage = async () => {};
+        const sendMessage = async (e) => {
+            socket?.emit('sendMessage', {
+                conversationId: messages?.conversationId,
+                senderId: user?.id,
+                message,
+                receiverId: messages?.receiver?.receiverId
+                
+            });
+            // eslint-disable-next-line
+            const res = await fetch (`http://localhost:8000/api/messages` , {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    conversationId: messages?.conversationId,
+                    senderId: user?.id,
+                    message,
+                    receiverId: messages?.receiver?.receiverId
+                })
+            });
+            setMessage('');
+        };
 
  return (
     <div className='w-screen h-full flex'>
@@ -71,6 +140,18 @@ const Dashboard = () => {
                                         <h3 className='text-sm font-light text-gray-500'>{user?.email}</h3>
                                     </div>
                                 </div>
+
+                                {/* Trash box */}
+                                <div className='ml-20 cursor-pointer'>
+                                <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-trash" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="#2c3e50" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                    <path d="M4 7l16 0" />
+                                    <path d="M10 11l0 6" />
+                                    <path d="M14 11l0 6" />
+                                    <path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" />
+                                    <path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" />
+                                </svg>
+                                </div>
                             </div>
                         </>
 
@@ -102,23 +183,22 @@ const Dashboard = () => {
             </div> } 
             <div className='w-full h-[75%]  overflow-y-scroll no-scrollbar shadow-sm'>
                     <div className='px-8 py-12'>
-                    {
-                        messages?.messages?.length > 0 ? 
-                            messages.messages.map(({message, user : {id} = {}}) =>{
-                                if(id === user?.id){
-                                    return (
-                                        <div className=' max-w-[50%] bg-secondary rounded-b-xl rounded-tr-xl p-2 mb-4 font-normal'>
-                                            {message}
-                                        </div>
-                                    )
-                                    
-                                }else {
-                                    <div className='max-w-[50%] bg-primary rounded-t-xl rounded-bl-xl ml-auto p-2 text-white mb-4 font-normal'>
-                                        {message}
-                                    </div>
-                                }
-                            }) : <div className='text-center text-xl font-bold mt-40 text-gray-800'> : / No Messages <p>Or</p> <p> No Conversation Selected !</p></div>
-                    }
+                    {    //
+                    //
+                    messages?.messages?.length > 0 ?
+								messages.messages.map(({ message, user: { id } = {} }) => {
+									return (
+                                        <>
+										<div className={`max-w-[40%] rounded-b-xl p-4 mb-6 ${id === user?.id ? 
+                                            'bg-primary rounded-t-xl rounded-bl-xl ml-auto p-2 text-white mb-4  ' : 'bg-secondary rounded-b-xl rounded-tr-xl p-2 mb-4'} `}>
+                                                {message}</div>   
+                                        <div ref={messageRef}></div>
+                                        </>
+       
+									)
+								}) : <div className='text-center text-xl font-bold mt-40 text-gray-800'> : / No Messages <p>Or</p> <p> No Conversation Selected !</p></div>
+						}
+ 
                     </div>
             </div>
             {   messages?.receiver?.fullName &&
@@ -132,7 +212,7 @@ const Dashboard = () => {
                     <path d="M10 14l11 -11"></path>
                     <path d="M21 3l-6.5 18a.55 .55 0 0 1 -1 0l-3.5 -7l-7 -3.5a.55 .55 0 0 1 0 -1l18 -6.5"></path>
                 </svg>
-               </div>
+                </div>
                <div className=' rounded-lg bg-white mt-5 ml-2 cursor-pointer'>
                 <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-circle-plus" width="24" height="24"         viewBox="0 0 24 24" strokeWidth="1.2" stroke="black" fill="none" strokeLinecap="round" strokeLinejoin="round">
                     <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
@@ -144,7 +224,36 @@ const Dashboard = () => {
             </div>
             }
         </div>
-        <div className='w-[25%] h-screen bg-light '></div>
+        <div className='w-[25%] h-screen bg-light'>
+        <div className='font-semibold text-xl mt-20 mx-10 text-primary'>Peoples</div>
+        <div className='px-8'>
+                    {
+                      
+                      users.length > 0 ?
+                      users.map(({userId, user}) => {
+                        return(
+                        <>
+                            <div className='flex  items-center my-3 border-b  border-b-gray-300 py-2'>
+                                <div className='cursor-pointer flex items-center' onClick={() => fetchMessages('new' , user)}>
+                                    <div className=' p-[0.1px]  rounded-full'>
+                                        <img src={Avatar} width={35} height={35} alt='profile' />
+                                    </div>
+                                    <div className='ml-4'>
+                                        <h3 className='text-lg font-semibold'>{user?.fullName}</h3>
+                                        <h3 className='text-sm font-light text-gray-500'>{user?.email}</h3>
+                                    </div>
+                                </div>
+                            </div>
+                        </>
+
+                        )
+                    }) : <>
+                            <div className='text-center text-xl font-extrabold mt-24'>: / </div>
+                            <div className='text-center text-xl font-bold mt-auto text-gray-700'>Their is none of any other than you on this platform !</div>
+                        </>
+                    }
+                </div>
+        </div>
     </div>
   )
 }
