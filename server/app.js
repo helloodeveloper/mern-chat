@@ -10,7 +10,7 @@ const io = require('socket.io')(8080, {
 
 //require('dotenv').config();
 const app = express();
-const port = process.env.Port || 3000;
+const port = process.env.Port || 8000;
 app.use(express.json());
 app.use(express.urlencoded({ extended: false}));
 app.use(cors());
