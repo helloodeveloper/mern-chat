@@ -224,7 +224,7 @@ const Dashboard = () => {
             </div>
             }
         </div>
-        <div className='w-[25%] h-screen bg-light'>
+        <div className='w-[25%] h-screen bg-light overflow-y-scroll no-scrollbar shadow-sm'>
         <div className='font-semibold text-xl mt-20 mx-10 text-primary'>Peoples</div>
         <div className='px-8'>
                     {
