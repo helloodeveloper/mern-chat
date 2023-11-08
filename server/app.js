@@ -1,16 +1,38 @@
-const express = require('express');
-const bcryptjs = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const cors = require('cors');
-const io = require('socket.io')(8080, {
+import express from 'express';
+import mongoose from 'mongoose';
+import dotenv from 'dotenv';
+import bcryptjs from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import cors from 'cors';
+import { Server } from 'socket.io';
+// import './db/connection.js';
+import  Users  from './models/Users.js';
+import  Conversations  from './models/Conversations.js';
+import  Messages  from './models/Messages.js';
+
+
+const io = new Server(8080, {
     cors: {
         origin: 'http://localhost:3000',
-    }
+    },
 });
 
-//require('dotenv').config();
+
+dotenv.config();
+
+mongoose
+  .connect(process.env.MONGO)
+  .then(() => {
+    console.log('Connected to MongoDB!');
+  })
+  .catch((err) => {
+    console.log(err);
+  });
+
+
+//process.env.Port ||
 const app = express();
-const port = process.env.Port || 8000;
+const port =  8000;
 app.use(express.json());
 app.use(express.urlencoded({ extended: false}));
 app.use(cors());
@@ -61,14 +83,7 @@ io.on('connection', socket => {
     // io.emit('getUsers', socket.userId);
 });
 
-//connect DB
-require('./db/connection');
 
-//import files
-
-const Users = require('./models/Users');
-const Conversations = require('./models/Conversations');
-const Messages = require('./models/Messages');
 
 app.get('/' , (req, res) => {
     res.send('welcome');
@@ -121,7 +136,7 @@ app.post("/api/register", async (req, res, next) => {
                         userId: user._id,
                         email: user.email
                     }
-                    const JWT_SECRET_KEY = process.env.JWT_SECRET_KEY || 'THIS_IS_A_JWT_SECRET_KEY';
+                    const JWT_SECRET_KEY = process.env.JWT_SECRET_KEY ;
                     jwt.sign(payload, JWT_SECRET_KEY , {expiresIn: 84600}, async (err, token) => {
                         await Users.updateOne({_id: user._id}, {
                             $set: {token}
