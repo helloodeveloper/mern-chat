@@ -13,7 +13,7 @@ import  Messages  from './models/Messages.js';
 
 const io = new Server(8080, {
     cors: {
-        origin: 'http://localhost:3000',
+        origin: process.env.URL,
     },
 });
 
