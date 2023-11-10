@@ -9,11 +9,12 @@ import { Server } from 'socket.io';
 import  Users  from './models/Users.js';
 import  Conversations  from './models/Conversations.js';
 import  Messages  from './models/Messages.js';
+import path from 'path';
 
 
 const io = new Server(8080, {
     cors: {
-        origin: process.env.URL,
+        origin: `http://localhost:3000`,
     },
 });
 
@@ -36,6 +37,20 @@ const port = process.env.Port ||  8000;
 app.use(express.json());
 app.use(express.urlencoded({ extended: false}));
 app.use(cors());
+
+
+const __dirname = path.resolve();
+if(process.env.NODE_ENV === 'production'){
+    app.use(express.static(path.join(__dirname, '/client/build')));
+
+    app.get('*' , (req, res) => {
+        res.sendFile(path.resolve(__dirname, 'client', 'build', 'index.html'));
+    });
+}else{
+    app.get('/' , (req, res) => {
+        res.send('welcome');
+    });
+}
 
 //socket io
 //receive krega server toh on krke krega receiv
@@ -85,9 +100,7 @@ io.on('connection', socket => {
 
 
 
-app.get('/' , (req, res) => {
-    res.send('welcome');
-});
+
 
 app.post("/api/register", async (req, res, next) => {
         try {
